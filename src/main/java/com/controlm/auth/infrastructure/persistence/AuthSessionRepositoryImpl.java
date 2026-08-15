@@ -1,6 +1,7 @@
 package com.controlm.auth.infrastructure.persistence;
 
 import com.controlm.auth.application.port.AuthSessionRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
@@ -28,5 +29,15 @@ class AuthSessionRepositoryImpl implements AuthSessionRepository {
     @Override
     public Optional<AuthSessionEntity> findByRefreshTokenHash(String refreshTokenHash) {
         return jpa.findByRefreshTokenHash(refreshTokenHash);
+    }
+
+    @Override
+    public Optional<AuthSessionEntity> findByRefreshTokenHashForUpdate(String refreshTokenHash) {
+        return jpa.findByRefreshTokenHashForUpdate(refreshTokenHash);
+    }
+
+    @Override
+    public List<AuthSessionEntity> findFamilyForUpdate(UUID tokenFamilyId) {
+        return jpa.findFamilyForUpdate(tokenFamilyId);
     }
 }

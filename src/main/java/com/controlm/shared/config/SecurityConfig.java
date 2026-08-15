@@ -13,9 +13,9 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 /**
  * Baseline security for BE1-01/BE1-02.
  *
- * <p>Deny by default: only health probes and the API documentation are open. JWT
- * authentication, permission checks and CSRF protection for the cookie-backed refresh and
- * logout endpoints arrive with BE1-06 to BE1-09, once the refresh cookie topology is decided.
+ * <p>Deny by default: only health probes and the API documentation are open. Portal bearer JWTs
+ * are signature/issuer/audience/expiry validated here. Permission checks and CSRF protection for
+ * cookie-backed refresh/logout arrive with BE1-07 to BE1-09.
  */
 @Configuration
 @EnableWebSecurity
@@ -42,6 +42,7 @@ public class SecurityConfig {
                 // never a redirect the Angular client cannot interpret.
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(
                         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
                 .build();

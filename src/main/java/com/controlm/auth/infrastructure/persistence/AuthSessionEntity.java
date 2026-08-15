@@ -129,4 +129,18 @@ public class AuthSessionEntity {
     public void setReplacedBySessionId(UUID replacedBySessionId) {
         this.replacedBySessionId = replacedBySessionId;
     }
+
+    public void rotate(Instant at, UUID replacementId) {
+        this.lastUsedAt = at;
+        this.revokedAt = at;
+        this.revokeReason = "ROTATED";
+        this.replacedBySessionId = replacementId;
+    }
+
+    public void revoke(Instant at, String reason) {
+        if (this.revokedAt == null) {
+            this.revokedAt = at;
+            this.revokeReason = reason;
+        }
+    }
 }

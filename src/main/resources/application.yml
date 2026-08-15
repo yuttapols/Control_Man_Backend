@@ -31,6 +31,15 @@ server:
 
 app:
   environment: ${APP_ENV:LOCAL}
+  jwt:
+    issuer: ${JWT_ISSUER}
+    audience: ${JWT_AUDIENCE}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    private-key: ${JWT_PRIVATE_KEY}
+    public-key: ${JWT_PUBLIC_KEY}
+  auth:
+    refresh-token-ttl: ${REFRESH_TOKEN_TTL:7d}
+    refresh-idle-timeout: ${REFRESH_IDLE_TIMEOUT:24h}
 
 management:
   endpoints:

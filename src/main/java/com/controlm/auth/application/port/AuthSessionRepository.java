@@ -2,6 +2,7 @@ package com.controlm.auth.application.port;
 
 import com.controlm.auth.infrastructure.persistence.AuthSessionEntity;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,4 +16,8 @@ public interface AuthSessionRepository {
     Optional<AuthSessionEntity> findById(UUID id);
 
     Optional<AuthSessionEntity> findByRefreshTokenHash(String refreshTokenHash);
+
+    Optional<AuthSessionEntity> findByRefreshTokenHashForUpdate(String refreshTokenHash);
+
+    List<AuthSessionEntity> findFamilyForUpdate(UUID tokenFamilyId);
 }
