@@ -9,7 +9,6 @@ import com.controlm.auth.application.RefreshTokenServiceImpl;
 import com.controlm.auth.infrastructure.token.RefreshTokenCodec;
 import com.controlm.auth.infrastructure.token.RefreshTokenProperties;
 import com.controlm.iam.infrastructure.persistence.AppUserEntity;
-import com.controlm.iam.infrastructure.persistence.AppUserJpaRepository;
 import com.controlm.shared.error.ApiException;
 import com.controlm.shared.error.ErrorCode;
 import jakarta.persistence.EntityManager;
@@ -27,7 +26,6 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class RefreshTokenRotationIntegrationTest {
     @Autowired private AuthSessionJpaRepository authJpa;
-    @Autowired private AppUserJpaRepository userJpa;
     @Autowired private EntityManager entityManager;
 
     private RefreshTokenService service;
@@ -41,11 +39,12 @@ class RefreshTokenRotationIntegrationTest {
                 new AuthSessionRepositoryImpl(authJpa),
                 codec,
                 new RefreshTokenProperties(Duration.ofDays(7), Duration.ofHours(24)));
-        user = userJpa.save(new AppUserEntity(
+        user = new AppUserEntity(
                 "refresh-" + System.nanoTime(),
                 "refresh-" + System.nanoTime() + "@example.com",
                 "Refresh Test",
-                "{noop}unused"));
+                "{noop}unused");
+        entityManager.persist(user);
         entityManager.flush();
     }
 

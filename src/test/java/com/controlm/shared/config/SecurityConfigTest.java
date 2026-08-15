@@ -1,5 +1,6 @@
 package com.controlm.shared.config;
 
+import com.controlm.testsupport.PostgresIntegrationTest;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -15,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Tag("db")
 @SpringBootTest
 @AutoConfigureMockMvc
-class SecurityConfigTest {
+class SecurityConfigTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -30,6 +31,28 @@ class SecurityConfigTest {
     @DisplayName("Health probe เปิดให้เรียกได้โดยไม่ต้อง authenticate เพื่อให้ platform ตรวจสถานะได้")
     void healthProbeIsPublic() throws Exception {
         mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("liveness และ readiness probes เปิด public แต่ไม่เปิดรายละเอียด dependency")
+    void probesArePublicAndSafe() throws Exception {
+        for (String path : new String[] {"/actuator/health/liveness", "/actuator/health/readiness"}) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isOk())
+                    .andExpect(result -> {
+                        String body = result.getResponse().getContentAsString();
+                        if (body.contains("jdbc:") || body.contains("database") || body.contains("components")) {
+                            throw new AssertionError("Health response leaked dependency detail: " + body);
+                        }
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("metrics และ prometheus ไม่เปิดให้ anonymous")
+    void metricsAreNotPublic() throws Exception {
+        mockMvc.perform(get("/actuator/metrics")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/prometheus")).andExpect(status().isUnauthorized());
     }
 
     @Test

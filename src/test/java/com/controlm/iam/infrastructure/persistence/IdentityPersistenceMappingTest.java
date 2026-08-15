@@ -1,5 +1,6 @@
 package com.controlm.iam.infrastructure.persistence;
 
+import com.controlm.testsupport.PostgresIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.controlm.auth.application.port.AuthSessionRepository;
@@ -30,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Tag("db")
 @SpringBootTest
 @Transactional
-class IdentityPersistenceMappingTest {
+class IdentityPersistenceMappingTest extends PostgresIntegrationTest {
 
     @PersistenceContext
     private EntityManager em;
@@ -55,6 +56,7 @@ class IdentityPersistenceMappingTest {
 
     @Autowired
     private AuthSessionRepository authSessionRepository;
+
 
     @Test
     @DisplayName("user_level ถูก persist พร้อม id/created_at ที่ DB เติมให้ และ version เพิ่มเมื่อแก้ไข")
@@ -147,4 +149,5 @@ class IdentityPersistenceMappingTest {
                 .as("session found by refresh token hash")
                 .isPresent();
     }
+
 }

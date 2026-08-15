@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Turns every failure into the Problem Details contract agreed with the frontend.
  *
  * <p>Two rules drive this class. A response must never leak a stack trace, SQL, schema detail
- * or secret, so unexpected exceptions are logged in full and answered with a fixed message.
+ * or secret, so unexpected exceptions are logged by safe type only and answered with a fixed message.
  * And every response carries the request id, so a user reporting an error gives support
  * something to search for.
  */
@@ -61,8 +61,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ProblemDetail> handleDataIntegrity(DataIntegrityViolationException ex) {
-        // The database message names constraints, tables and values, so it is logged, not returned.
-        log.warn("Data integrity violation [requestId={}]", RequestIdHolder.currentRequestId(), ex);
+        // Never log the exception message: it can contain constraint values or submitted data.
+        log.warn("Data integrity violation type={} [requestId={}]",
+                ex.getClass().getSimpleName(), RequestIdHolder.currentRequestId());
         return respond(ErrorCode.DUPLICATE_RESOURCE, "The request conflicts with existing data");
     }
 
@@ -80,7 +81,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleUnexpected(Exception ex) {
-        log.error("Unhandled exception [requestId={}]", RequestIdHolder.currentRequestId(), ex);
+        // Exception messages and stack traces can carry URLs, credentials and request payloads.
+        log.error("Unhandled exception type={} [requestId={}]",
+                ex.getClass().getSimpleName(), RequestIdHolder.currentRequestId());
         return respond(ErrorCode.INTERNAL_ERROR, "An unexpected error occurred");
     }
 

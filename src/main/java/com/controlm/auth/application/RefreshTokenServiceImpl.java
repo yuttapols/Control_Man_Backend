@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class RefreshTokenServiceImpl implements RefreshTokenService {
@@ -22,6 +23,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final RefreshTokenProperties properties;
     private final Clock clock;
 
+    @Autowired
     public RefreshTokenServiceImpl(AuthSessionRepository sessions, RefreshTokenCodec codec,
             RefreshTokenProperties properties) {
         this(sessions, codec, properties, Clock.systemUTC());
@@ -44,7 +46,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 userId, codec.hash(raw), UUID.randomUUID(), now.plus(properties.refreshTokenTtl()));
         session.setClientFingerprint(clientFingerprint);
         sessions.save(session);
-        return new RefreshTokenResult(raw, session.getId(), session.getExpiresAt());
+        return new RefreshTokenResult(raw, session.getId(), session.getUserId(), session.getExpiresAt());
     }
 
     @Override
@@ -77,7 +79,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         replacement.setClientFingerprint(clientFingerprint);
         sessions.save(replacement);
         current.rotate(now, replacement.getId());
-        return new RefreshTokenResult(raw, replacement.getId(), replacement.getExpiresAt());
+        return new RefreshTokenResult(raw, replacement.getId(), replacement.getUserId(), replacement.getExpiresAt());
     }
 
     @Override

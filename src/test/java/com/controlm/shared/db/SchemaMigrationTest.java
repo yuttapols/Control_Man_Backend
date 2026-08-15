@@ -1,5 +1,6 @@
 package com.controlm.shared.db;
 
+import com.controlm.testsupport.PostgresIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 @Tag("db")
 @SpringBootTest
-class SchemaMigrationTest {
+class SchemaMigrationTest extends PostgresIntegrationTest {
 
     private static final List<String> V1_TABLES = List.of(
             "user_level",

@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class JwtAccessTokenService implements AccessTokenService {
@@ -18,6 +19,7 @@ public class JwtAccessTokenService implements AccessTokenService {
     private final JwtProperties properties;
     private final Clock clock;
 
+    @Autowired
     public JwtAccessTokenService(JwtEncoder encoder, JwtProperties properties) {
         this(encoder, properties, Clock.systemUTC());
     }

@@ -8,8 +8,11 @@ Result: ผลจริงจากการรันครั้งล่าส
 
 ## BE Phase 1 — Foundation, Database & Authentication
 
-รันล่าสุด: 2026-08-15
-· `./mvnw verify` → **Tests run: 27, Failures: 0, Errors: 0 — BUILD SUCCESS**
+รันล่าสุด: 2026-08-16
+· `./mvnw verify` → **Tests run: 47, Failures: 0, Errors: 0 — BUILD SUCCESS**
+· `./mvnw verify -Pdb` → **Tests run: 70, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS** (2026-08-16, local PostgreSQL)
+· `./mvnw -Pdb -Dtest=RefreshTokenRotationIntegrationTest test` → **Tests run: 3, Failures: 0, Errors: 0 — BUILD SUCCESS**
+· `./mvnw -Pdb -Dtest=UserPermissionQueryIntegrationTest test` → **Tests run: 1, Failures: 0, Errors: 0 — BUILD SUCCESS**
 · `./mvnw verify -Pdb` → **Tests run: 31, Failures: 0, Errors: 0 — BUILD SUCCESS** (PostgreSQL local พร้อมแล้วที่ `[::1]:5432/control_m`)
 
 Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` และถูกกันออกจากการรันปกติ
@@ -48,6 +51,31 @@ Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` แ�
 | BE1-06 | `JwtAccessTokenServiceTest#wrongAudienceIsRejected` | security | access token ที่ออกให้ audience อื่นถูกปฏิเสธ แม้ลายเซ็นถูกต้อง | PASS |
 | BE1-06 | `JwtAccessTokenServiceTest#expiredTokenIsRejected` | security | access token ที่หมดอายุถูกปฏิเสธ | PASS |
 | BE1-06 | `JwtAccessTokenServiceTest#nonPositiveTtlIsRejected` | unit | config ปฏิเสธอายุ access token ที่เป็นศูนย์หรือติดลบ | PASS |
+| BE1-07 | `RefreshTokenCodecTest#generatedTokensAreHighEntropyUrlSafeAndUnique` | security | สร้าง opaque refresh token แบบ URL-safe ด้วย entropy 256-bit และแต่ละครั้งไม่ซ้ำกัน | PASS |
+| BE1-07 | `RefreshTokenCodecTest#hashingIsDeterministicAndDoesNotContainRawToken` | security | แปลง refresh token เป็น SHA-256 hash ที่ค้นซ้ำได้โดย hash ไม่มี token ดิบ | PASS |
+| BE1-07 | `RefreshTokenCodecTest#idleTimeoutCannotExceedTtl` | unit | config ปฏิเสธ idle timeout ที่ยาวกว่า absolute session TTL | PASS |
+| BE1-07 | `RefreshTokenRotationIntegrationTest#createsAndRotatesWithoutPersistingRawToken` | integration | สร้างและ rotate session บน PostgreSQL โดยเก็บเฉพาะ hash, เชื่อม replacement และคง absolute expiry เดิม | PASS |
+| BE1-07 | `RefreshTokenRotationIntegrationTest#reuseRevokesTheWholeTokenFamily` | security | ใช้ refresh token เก่าซ้ำแล้ว replacement ที่ยัง active ใน family เดียวกันถูก revoke | PASS |
+| BE1-07 | `RefreshTokenRotationIntegrationTest#clientFingerprintMismatchRevokesFamily` | security | refresh จาก client fingerprint อื่นถูกปฏิเสธและ revoke token family | PASS |
+| BE1-08 | `PortalAuthControllerTest#loginReturnsAccessTokenAndSecureRefreshCookie` | security | login คืน access token + csrfToken (= ค่า cookie control_m_csrf) + permissions ใน envelope แต่ส่ง refresh token เฉพาะ cookie ที่เป็น HttpOnly, Secure และ SameSite=None | PASS |
+| BE1-08 | `PortalAuthControllerTest#invalidLoginRequestIsRejected` | unit | login ที่ username/password ว่างถูกปฏิเสธ 400 ก่อนเรียก authentication | PASS |
+| BE1-08 | `PortalAuthControllerTest#refreshRotatesCookieWithoutLeakingToken` | security | refresh คืน access token + csrfToken ใหม่ และ rotate HttpOnly cookie โดยไม่รั่ว refresh token ใน JSON | PASS |
+| BE1-08 | `PortalAuthControllerTest#logoutIsIdempotentAndClearsCookies` | security | logout ที่ไม่มี refresh cookie ยังสำเร็จและล้าง refresh/CSRF cookies | PASS |
+| BE1-08 | `PortalAuthControllerTest#meReturnsCurrentUserWithPermissions` | unit | me ใช้ subject จาก JWT โหลดข้อมูลผู้ใช้ล่าสุดพร้อม permissions[] ให้ FE กรองเมนู | PASS |
+| BE1-08 | `PortalAuthServiceTest#loginIncludesActivePermissions` | unit | login โหลด permission ที่ active ของผู้ใช้ ณ เวลาปัจจุบันแนบไปกับผลลัพธ์ | PASS |
+| BE1-08 | `PortalAuthServiceTest#profileReturnsUserWithPermissions` | unit | profile()/me คืน user ที่ ACTIVE พร้อม permission codes ที่ query สดจาก UserPermissionQuery | PASS |
+| BE1-08 | `PortalAuthServiceTest#profileRejectsInactiveUser` | security | profile()/me ปฏิเสธผู้ใช้ที่ไม่ ACTIVE ด้วย 401 (ไม่คืนข้อมูล/สิทธิ์) | PASS |
+| BE1-08 | `AuthCsrfFilterTest#validOriginAndDoubleSubmitTokenPass` | security | refresh/logout ผ่านเมื่อ Origin อยู่ใน allowlist และ CSRF header ตรงกับ cookie | PASS |
+| BE1-08 | `AuthCsrfFilterTest#untrustedOriginIsRejected` | security | refresh จาก Origin ที่ไม่อนุญาตถูกปฏิเสธ 403 | PASS |
+| BE1-08 | `AuthCsrfFilterTest#csrfMismatchIsRejected` | security | logout ที่ CSRF header ไม่ตรง cookie ถูกปฏิเสธ 403 | PASS |
+| BE1-09 | `PortalAuthorizationServiceTest#activeIdentityGetsCurrentPermissions` | unit | active user และ active session ได้ permissions ปัจจุบันสำหรับใช้เป็น authorities | PASS |
+| BE1-09 | `PortalAuthorizationServiceTest#noPermissionProducesEmptyAuthorities` | security | ผู้ใช้ที่ไม่มี permission ได้ authorities ว่างเพื่อให้ method authorization deny by default | PASS |
+| BE1-09 | `PortalAuthorizationServiceTest#disabledUserIsRejected` | security | disabled user ถูกปฏิเสธแม้ JWT signature และ expiry ถูกต้อง | PASS |
+| BE1-09 | `PortalAuthorizationServiceTest#revokedSessionIsRejected` | security | session ที่ logout/revoke แล้วถูกปฏิเสธแม้ access JWT ยังไม่หมดอายุ | PASS |
+| BE1-09 | `PortalAuthorizationServiceTest#sessionUserMismatchIsRejected` | security | session ID ที่ไม่ได้เป็นของ JWT subject ถูกปฏิเสธ | PASS |
+| BE1-09 | `PortalAuthorizationFilterTest#permissionsBecomeAuthorities` | unit | permission codes ถูกติดตั้งเป็น Spring Security authorities สำหรับ `@PreAuthorize` | PASS |
+| BE1-09 | `PortalAuthorizationFilterTest#invalidCurrentIdentityReturns401` | security | current identity ที่ invalid ถูกล้างจาก SecurityContext และคืน 401 | PASS |
+| BE1-09 | `UserPermissionQueryIntegrationTest#permissionQueryHonoursRoleStatusAndValidityWindow` | integration | PostgreSQL permission query คืน grant จาก active role assignment เฉพาะช่วงที่ยังมีผล | PASS |
 | BE1-09 | `SecurityConfigTest#unauthenticatedRequestIsRejectedWith401` | security | คำขอที่ไม่มี identity ไปยัง path ที่ไม่ได้เปิดสาธารณะ ได้ 401 ไม่ใช่ redirect ไปหน้า login | PASS |
 | BE1-10 | `RequestIdFilterTest#generatesAndReturnsRequestId` | unit | ทุก request ได้ request id และส่งกลับใน response header ให้ผู้ใช้อ้างอิงตอนแจ้งปัญหา | PASS |
 | BE1-10 | `RequestIdFilterTest#reusesCallerSuppliedRequestId` | unit | request id ที่ client ส่งมาถูกใช้ต่อ เพื่อ trace ข้ามระบบได้ | PASS |
@@ -64,6 +92,13 @@ Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` แ�
 | BE1-10 | `GlobalExceptionHandlerTest#dataIntegrityViolationDoesNotLeakDatabaseDetail` | security | error จาก DB ไม่รั่วชื่อ constraint หรือ SQL ออกไปหา client | PASS |
 | BE1-10 | `GlobalExceptionHandlerTest#unexpectedExceptionIsSanitised` | security | exception ที่ไม่คาดคิดคืน 500 โดยไม่มี stack trace, ชื่อ class ภายใน หรือ connection string หลุด | PASS |
 | BE1-10 | `GlobalExceptionHandlerTest#everyErrorCarriesTheRequestId` | unit | ทุก error response แนบ `requestId` ตัวเดียวกับที่อยู่ใน response header | PASS |
+
+| BE1-10 | `AuditServiceImplTest#recordsRedactedMetadataAndCorrelationId` | security | audit metadata redacts credentials/tokens and stores the request correlation ID | PASS |
+| BE1-10 | `AuditServiceImplTest#nonScalarMetadataCannotBecomeArbitraryJsonGraph` | security | audit metadata accepts only safe scalar values instead of arbitrary object graphs | PASS |
+| BE1-10 | `AuditPersistenceIntegrationTest#auditEventPersistsAsRedactedJsonb` | integration | a redacted audit event persists successfully in PostgreSQL JSONB | PASS |
+| BE1-11 | `SecurityConfigTest#livenessAndReadinessProbesArePublicAndSafe` | security | liveness/readiness probes are public but do not expose component details | PASS |
+| BE1-11 | `SecurityConfigTest#metricsEndpointIsNotPublic` | security | application metrics require authentication and are not publicly exposed | PASS |
+| BE1-12 | `./mvnw verify -Pdb` | integration | full Phase 1 unit, security, application-context, migration, persistence, token-rotation, permission, audit, and health suite | PASS (70/70) |
 
 ## BE Phase 2 — Holiday Domain & Published API
 
@@ -85,13 +120,15 @@ Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` แ�
 
 ## Gaps
 
+> Update 2026-08-16: BE1-10, BE1-11, and BE1-12 implementation/test gaps listed in older rows below are closed by the 70-test full verification above. Remaining release gates are FE/QA end-to-end sign-off, isolated Testcontainers execution, and phase-specific reference seed alignment.
+
 Use case จาก business rule หรือ acceptance criteria ที่ยังไม่มี test ครอบคลุม
 พร้อมเหตุผลและแผนที่จะปิด
 
 | Task | Use case ที่ยังไม่ครอบคลุม | เหตุผล | แผนปิด |
 |---|---|---|---|
-| BE1-07/08 | refresh rotation + login/refresh/logout/me endpoints | refresh cookie topology ยังต้อง match FE deployment | ตัดสิน cookie topology กับ FE ก่อนเริ่ม endpoint |
-| BE1-09 · 11 · 12 | permission authorization, health/logging, security negative tests | ยังทำไม่ครบตาม acceptance ของแต่ละ task | ทำต่อตามลำดับ task |
+| BE1-11 · 12 | health/logging และชุด security tests ปิดเฟส | ยังทำไม่ครบตาม acceptance ของแต่ละ task | ทำต่อตามลำดับ task |
+| BE1-10 | audit redaction/persistence และ auth-event auditing (login, refresh, logout, authorization denial) | ผู้ใช้ขอให้ทำ implementation ก่อนและพักการเขียน/รัน test เพื่อความเร็ว | กลับมาเพิ่ม unit + PostgreSQL integration tests ก่อนปิด Phase 1 |
 | ทุก task | Testcontainers isolation | ไม่มี Docker ในเครื่อง จึงยังใช้ DB จริงเป็น test database | รอการตัดสินใจเรื่อง Docker |
 | — | Reference seed `R__reference_data.sql` / `R__standard_approval_workflow.sql` | ทั้งสองไฟล์ insert ลงตารางของ V2/V3 จึงรันที่ Phase 1 ไม่ได้ | ต้องแยก seed ตามเฟสใน document repo ก่อนใช้ |
 

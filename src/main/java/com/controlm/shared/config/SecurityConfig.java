@@ -9,6 +9,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import com.controlm.auth.api.AuthCsrfFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import com.controlm.auth.infrastructure.security.PortalAuthorizationFilter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 /**
  * Baseline security for BE1-01/BE1-02.
@@ -19,6 +24,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private static final String[] PUBLIC_PATHS = {
@@ -31,10 +37,15 @@ public class SecurityConfig {
     };
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(Customizer.withDefaults())
+    SecurityFilterChain securityFilterChain(HttpSecurity http, AuthCsrfFilter authCsrfFilter,
+            PortalAuthorizationFilter portalAuthorizationFilter) throws Exception {
+        return http.csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_PATHS)
+                        .permitAll()
+                        .requestMatchers("/api/v1/portal/auth/login", "/api/v1/portal/auth/refresh",
+                                "/api/v1/portal/auth/logout")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
@@ -43,6 +54,8 @@ public class SecurityConfig {
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(
                         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .addFilterBefore(authCsrfFilter, BasicAuthenticationFilter.class)
+                .addFilterAfter(portalAuthorizationFilter, BearerTokenAuthenticationFilter.class)
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
                 .build();

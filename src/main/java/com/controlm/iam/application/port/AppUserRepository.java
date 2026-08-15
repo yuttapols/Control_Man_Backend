@@ -15,4 +15,5 @@ public interface AppUserRepository {
     Optional<AppUserEntity> findById(UUID id);
 
     Optional<AppUserEntity> findByUsernameIgnoreCase(String username);
+
 }

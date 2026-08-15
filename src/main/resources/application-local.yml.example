@@ -22,6 +22,11 @@ app:
   auth:
     refresh-token-ttl: 7d
     refresh-idle-timeout: 24h
+  auth-web:
+    cookie-domain:
+    secure-cookie: false
+    allowed-origins:
+      - http://localhost:4200
 
 logging:
   level:
