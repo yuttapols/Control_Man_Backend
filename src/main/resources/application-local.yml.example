@@ -1,0 +1,19 @@
+# คัดลอกไฟล์นี้เป็น application-local.yml แล้วใส่ค่าจริง
+# application-local.yml ถูก git-ignore ไว้ ห้าม commit ค่าจริงเข้า repo
+#
+#   cp application-local.yml.example application-local.yml
+#
+# ใช้เฉพาะเครื่อง developer เท่านั้น DEV/UAT/PROD ต้อง inject ผ่าน environment variable
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/control_m
+    username: postgres
+    password: CHANGE_ME
+
+app:
+  environment: LOCAL
+
+logging:
+  level:
+    root: INFO
