@@ -68,9 +68,11 @@ Portal ใช้ pattern **access token ใน body + refresh token ใน HttpO
 
 - `accessToken` (JWT RS256, อายุ 15 นาที) — FE เก็บใน memory แล้วแนบเป็น `Authorization: Bearer ...`
 - `csrfToken` — คืนใน **response body** ของ login/refresh; FE เก็บใน memory แล้วแนบเป็น header `X-CSRF-Token` ตอนเรียก refresh/logout
-- `control_m_refresh` — HttpOnly cookie, FE เข้าถึงไม่ได้ ส่งอัตโนมัติเฉพาะ path `/api/v1/portal/auth`
-- `control_m_csrf` — cookie ที่ browser ส่งกลับอัตโนมัติ ใช้เป็นฝั่ง server ของ double-submit (server เทียบ header `X-CSRF-Token` กับ cookie นี้) โดย FE ไม่ต้องอ่านค่ามันเอง เพราะได้ `csrfToken` จาก body แล้ว
+- `control_m_refresh` — HttpOnly cookie, `Path=/api/v1/portal/auth`, FE เข้าถึงไม่ได้ ส่งอัตโนมัติเฉพาะ path นี้ (browser เลือกส่งตาม path ของ request จึงจำกัดให้แคบได้)
+- `control_m_csrf` — cookie อ่านได้ (ไม่ใช่ HttpOnly), `Path=/` ตั้งใจให้ JavaScript อ่านได้จากทุก route ของ SPA (เช่น `/dashboard`) ตาม double-submit — server เทียบ header `X-CSRF-Token` กับ cookie นี้ ค่าไม่ใช่ความลับ การป้องกันมาจาก same-origin policy
+- หลัง reload (F5) FE เสีย `csrfToken` ใน memory จึงต้องอ่านกลับจาก cookie `control_m_csrf` ก่อนเรียก refresh — เพราะ cookie นี้เป็น `Path=/` JavaScript จึงอ่านเห็นได้จากทุกหน้า
 - refresh/logout ยังตรวจ `Origin` ว่าอยู่ใน allowed-origins ด้วย
+- **login/refresh/logout ไม่ต้องใช้ และจะ "เพิกเฉย" ต่อ header `Authorization: Bearer ...`** — endpoint เหล่านี้เป็น public และทำงานด้วย refresh cookie ล้วน ๆ ถ้า FE เผลอแนบ access token ที่หมดอายุมากับ refresh ก็จะไม่ทำให้ผลลัพธ์กลายเป็น 401 (session restore ตอน F5 จึงไม่พัง) — ส่วน `/me` และ endpoint อื่นยังตรวจ JWT ตามปกติ
 - `permissions[]` (รหัส `module.resource.action`) แนบไปกับ user ทุก endpoint (login/refresh/me) ให้ FE กรองเมนูได้ — การบังคับสิทธิ์จริงอยู่ที่ backend (deny by default)
 
 ---
@@ -94,7 +96,7 @@ Validation: `username` ไม่ว่าง ≤100, `password` ไม่ว่�
 
 ### Response `200 OK`
 
-Set-Cookie: `control_m_refresh` (HttpOnly) + `control_m_csrf`
+Set-Cookie: `control_m_refresh` (HttpOnly, `Path=/api/v1/portal/auth`) + `control_m_csrf` (readable, `Path=/`)
 
 ```json
 {
@@ -183,7 +185,7 @@ X-CSRF-Token: <csrfToken จาก body ของ login/refresh ครั้ง�
 
 ### Response `200 OK`
 
-`data` เป็น `null` และ Set-Cookie เคลียร์ `control_m_refresh` + `control_m_csrf`
+`data` เป็น `null` และ Set-Cookie เคลียร์ `control_m_refresh` (`Path=/api/v1/portal/auth`) + `control_m_csrf` (`Path=/`) ด้วย `Max-Age=0` — path ของแต่ละ cookie ตอนลบต้องตรงกับตอน set มิฉะนั้น browser จะไม่ลบให้
 
 ```json
 {

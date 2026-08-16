@@ -20,8 +20,13 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+    url: ${FLYWAY_URL:${DATABASE_URL}}
+    user: ${FLYWAY_USERNAME:${DATABASE_USERNAME}}
+    password: ${FLYWAY_PASSWORD:${DATABASE_PASSWORD}}
     locations: classpath:db/migration
     validate-on-migrate: true
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:0}
 
 server:
   port: ${SERVER_PORT:8080}

@@ -53,7 +53,11 @@ public class SecurityConfig {
                 // never a redirect the Angular client cannot interpret.
                 .exceptionHandling(handling -> handling.authenticationEntryPoint(
                         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                // Resolve no bearer token for the public auth endpoints so an expired access token
+                // attached by the SPA cannot turn a permitAll refresh/logout into a 401.
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(new PortalBearerTokenResolver())
+                        .jwt(Customizer.withDefaults()))
                 .addFilterBefore(authCsrfFilter, BasicAuthenticationFilter.class)
                 .addFilterAfter(portalAuthorizationFilter, BearerTokenAuthenticationFilter.class)
                 .httpBasic(basic -> basic.disable())

@@ -57,10 +57,10 @@ Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` แ�
 | BE1-07 | `RefreshTokenRotationIntegrationTest#createsAndRotatesWithoutPersistingRawToken` | integration | สร้างและ rotate session บน PostgreSQL โดยเก็บเฉพาะ hash, เชื่อม replacement และคง absolute expiry เดิม | PASS |
 | BE1-07 | `RefreshTokenRotationIntegrationTest#reuseRevokesTheWholeTokenFamily` | security | ใช้ refresh token เก่าซ้ำแล้ว replacement ที่ยัง active ใน family เดียวกันถูก revoke | PASS |
 | BE1-07 | `RefreshTokenRotationIntegrationTest#clientFingerprintMismatchRevokesFamily` | security | refresh จาก client fingerprint อื่นถูกปฏิเสธและ revoke token family | PASS |
-| BE1-08 | `PortalAuthControllerTest#loginReturnsAccessTokenAndSecureRefreshCookie` | security | login คืน access token + csrfToken (= ค่า cookie control_m_csrf) + permissions ใน envelope แต่ส่ง refresh token เฉพาะ cookie ที่เป็น HttpOnly, Secure และ SameSite=None | PASS |
+| BE1-08 | `PortalAuthControllerTest#loginReturnsAccessTokenAndSecureRefreshCookie` | security | login คืน access token + csrfToken (= ค่า cookie control_m_csrf) + permissions ใน envelope; refresh cookie เป็น HttpOnly/Secure/SameSite=None และ `Path=/api/v1/portal/auth`; ส่วน csrf cookie อ่านได้ (ไม่ HttpOnly) และ `Path=/` เพื่อให้ JS อ่านได้ทุก route หลัง F5 | PASS |
 | BE1-08 | `PortalAuthControllerTest#invalidLoginRequestIsRejected` | unit | login ที่ username/password ว่างถูกปฏิเสธ 400 ก่อนเรียก authentication | PASS |
 | BE1-08 | `PortalAuthControllerTest#refreshRotatesCookieWithoutLeakingToken` | security | refresh คืน access token + csrfToken ใหม่ และ rotate HttpOnly cookie โดยไม่รั่ว refresh token ใน JSON | PASS |
-| BE1-08 | `PortalAuthControllerTest#logoutIsIdempotentAndClearsCookies` | security | logout ที่ไม่มี refresh cookie ยังสำเร็จและล้าง refresh/CSRF cookies | PASS |
+| BE1-08 | `PortalAuthControllerTest#logoutIsIdempotentAndClearsCookies` | security | logout ที่ไม่มี refresh cookie ยังสำเร็จและล้าง refresh/CSRF cookies ด้วย `Max-Age=0` โดย Path ของแต่ละ cookie ตรงกับตอน set (refresh `Path=/api/v1/portal/auth`, csrf `Path=/`) มิฉะนั้น browser ไม่ลบ | PASS |
 | BE1-08 | `PortalAuthControllerTest#meReturnsCurrentUserWithPermissions` | unit | me ใช้ subject จาก JWT โหลดข้อมูลผู้ใช้ล่าสุดพร้อม permissions[] ให้ FE กรองเมนู | PASS |
 | BE1-08 | `PortalAuthServiceTest#loginIncludesActivePermissions` | unit | login โหลด permission ที่ active ของผู้ใช้ ณ เวลาปัจจุบันแนบไปกับผลลัพธ์ | PASS |
 | BE1-08 | `PortalAuthServiceTest#profileReturnsUserWithPermissions` | unit | profile()/me คืน user ที่ ACTIVE พร้อม permission codes ที่ query สดจาก UserPermissionQuery | PASS |
@@ -68,6 +68,11 @@ Test ที่ต้องใช้ PostgreSQL ถูก tag ว่า `db` แ�
 | BE1-08 | `AuthCsrfFilterTest#validOriginAndDoubleSubmitTokenPass` | security | refresh/logout ผ่านเมื่อ Origin อยู่ใน allowlist และ CSRF header ตรงกับ cookie | PASS |
 | BE1-08 | `AuthCsrfFilterTest#untrustedOriginIsRejected` | security | refresh จาก Origin ที่ไม่อนุญาตถูกปฏิเสธ 403 | PASS |
 | BE1-08 | `AuthCsrfFilterTest#csrfMismatchIsRejected` | security | logout ที่ CSRF header ไม่ตรง cookie ถูกปฏิเสธ 403 | PASS |
+| BE1-08 | `PortalBearerTokenResolverTest#refreshIgnoresPresentedBearerToken` | security | POST /auth/refresh ที่ถูกแนบ access token หมดอายุมาด้วย ต้องไม่ resolve token — กัน bearer filter ตอบ 401 บน endpoint ที่เป็น permitAll (session restore ตอน F5 ทำงานได้) | PASS |
+| BE1-08 | `PortalBearerTokenResolverTest#loginAndLogoutIgnoreBearerToken` | security | POST /auth/login และ /auth/logout ก็ข้ามการ resolve bearer token เช่นกัน | PASS |
+| BE1-08 | `PortalBearerTokenResolverTest#meStillResolvesBearerToken` | security | GET /auth/me ยัง resolve และตรวจ JWT ตามปกติ ไม่ถูกยกเว้น | PASS |
+| BE1-08 | `PortalBearerTokenResolverTest#protectedResourceStillResolvesBearerToken` | security | endpoint ป้องกันอื่น (เช่น /portal/holidays) ยัง resolve bearer token ตามเดิม | PASS |
+| BE1-08 | `PortalBearerTokenResolverTest#nonPostToAuthPathStillResolves` | security | ยกเว้นเฉพาะ POST login/refresh/logout เท่านั้น — GET ไปยัง path เดียวกันยัง resolve token | PASS |
 | BE1-09 | `PortalAuthorizationServiceTest#activeIdentityGetsCurrentPermissions` | unit | active user และ active session ได้ permissions ปัจจุบันสำหรับใช้เป็น authorities | PASS |
 | BE1-09 | `PortalAuthorizationServiceTest#noPermissionProducesEmptyAuthorities` | security | ผู้ใช้ที่ไม่มี permission ได้ authorities ว่างเพื่อให้ method authorization deny by default | PASS |
 | BE1-09 | `PortalAuthorizationServiceTest#disabledUserIsRejected` | security | disabled user ถูกปฏิเสธแม้ JWT signature และ expiry ถูกต้อง | PASS |

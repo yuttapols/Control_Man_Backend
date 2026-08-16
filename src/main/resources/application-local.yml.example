@@ -7,9 +7,15 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/control_m
-    username: postgres
-    password: CHANGE_ME
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  flyway:
+    url: ${FLYWAY_URL:${DATABASE_URL}}
+    user: ${FLYWAY_USERNAME:${DATABASE_USERNAME}}
+    password: ${FLYWAY_PASSWORD:${DATABASE_PASSWORD}}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:0}
 
 app:
   environment: LOCAL

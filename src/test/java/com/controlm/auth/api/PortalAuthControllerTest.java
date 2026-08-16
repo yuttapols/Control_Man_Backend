@@ -69,9 +69,22 @@ class PortalAuthControllerTest {
         // csrfToken in the body must equal the value set in the readable csrf cookie (double-submit).
         String csrfCookie = result.getResponse().getCookie(AuthCookieService.CSRF_COOKIE).getValue();
         assertThat(com.jayway.jsonpath.JsonPath.<String>read(body, "$.data.csrfToken")).isEqualTo(csrfCookie);
-        assertThat(result.getResponse().getHeaders("Set-Cookie").getFirst())
-                .contains("control_m_refresh=raw-refresh-secret", "HttpOnly", "Secure", "SameSite=None")
-                .doesNotContain("password");
+
+        List<String> setCookies = result.getResponse().getHeaders("Set-Cookie");
+        // Refresh cookie stays narrowly scoped and HttpOnly.
+        assertThat(setCookies)
+                .anyMatch(value -> value.startsWith("control_m_refresh=raw-refresh-secret")
+                        && value.contains("Path=/api/v1/portal/auth")
+                        && value.contains("HttpOnly")
+                        && value.contains("Secure")
+                        && value.contains("SameSite=None")
+                        && !value.contains("password"));
+        // CSRF cookie must be readable on every SPA route → Path=/ and not HttpOnly.
+        assertThat(setCookies)
+                .anyMatch(value -> value.startsWith("control_m_csrf=")
+                        && value.contains("Path=/")
+                        && !value.contains("Path=/api/v1/portal/auth")
+                        && !value.contains("HttpOnly"));
     }
 
     @Test
@@ -114,9 +127,15 @@ class PortalAuthControllerTest {
                 .andReturn();
 
         verify(auth).logout(null);
+        // Each clearing cookie must use the same Path it was set with, or the browser keeps it.
         assertThat(result.getResponse().getHeaders("Set-Cookie"))
-                .anyMatch(value -> value.contains("control_m_refresh=") && value.contains("Max-Age=0"))
-                .anyMatch(value -> value.contains("control_m_csrf=") && value.contains("Max-Age=0"));
+                .anyMatch(value -> value.contains("control_m_refresh=")
+                        && value.contains("Max-Age=0")
+                        && value.contains("Path=/api/v1/portal/auth"))
+                .anyMatch(value -> value.contains("control_m_csrf=")
+                        && value.contains("Max-Age=0")
+                        && value.contains("Path=/")
+                        && !value.contains("Path=/api/v1/portal/auth"));
     }
 
     @Test
