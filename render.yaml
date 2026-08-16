@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: control-m-backend-dev
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health/readiness
+    autoDeployTrigger: off
+    envVars:
+      - key: APP_ENV
+        value: DEV
+      - key: SPRING_PROFILES_ACTIVE
+        value: dev
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        value: control_m_app_dev
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: FLYWAY_URL
+        sync: false
+      - key: FLYWAY_USERNAME
+        value: neondb_owner
+      - key: FLYWAY_PASSWORD
+        sync: false
+      - key: FLYWAY_BASELINE_ON_MIGRATE
+        value: "false"
+      - key: FLYWAY_BASELINE_VERSION
+        value: "4"
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: DB_POOL_MIN
+        value: "1"
+      - key: JWT_ISSUER
+        sync: false
+      - key: JWT_AUDIENCE
+        value: control-m-portal
+      - key: JWT_ACCESS_TOKEN_TTL
+        value: 15m
+      - key: JWT_PRIVATE_KEY
+        sync: false
+      - key: JWT_PUBLIC_KEY
+        sync: false
+      - key: REFRESH_TOKEN_TTL
+        value: 7d
+      - key: REFRESH_IDLE_TIMEOUT
+        value: 24h
+      - key: REFRESH_COOKIE_SECURE
+        value: "true"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO
