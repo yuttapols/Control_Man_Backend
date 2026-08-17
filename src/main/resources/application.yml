@@ -84,6 +84,8 @@ logging:
     root: ${LOG_LEVEL:INFO}
     # This resolver includes exception messages at DEBUG, which may contain submitted secrets.
     org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: INFO
+    # This processor logs serialized response bodies at DEBUG, including issued access tokens.
+    org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor: INFO
   structured:
     format:
       console: ${LOG_FORMAT:logstash}
